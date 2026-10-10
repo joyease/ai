@@ -1,0 +1,426 @@
+<!DOCTYPE html><html lang="zh-TW"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我去過日本哪裡？47都道府縣旅遊地圖</title>
+    <!-- Google Fonts for Modern Japanese/Traditional Chinese Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&amp;family=Plus+Jakarta+Sans:wght@500;700;800&amp;display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --font-main: 'Plus Jakarta Sans', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 50%, #f1f5f9 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2.5rem 1rem;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 柔和質感的玻璃與陰影外框 */
+        .card-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 裝飾性漸層頂部線條 */
+        .card-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+        }
+
+        /* 標題與副標 */
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #0f172a;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.05rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            letter-spacing: -0.01em;
+        }
+
+        /* 輸入控制列整合面板 */
+        .search-control-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 6px 8px;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+            transition: all 0.25s ease;
+            max-width: 540px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .search-control-wrap:focus-within {
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+
+        #nickname {
+            flex: 1;
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            color: #0f172a;
+            outline: none;
+            letter-spacing: 0.5px;
+        }
+
+        #nickname::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.975rem;
+            font-weight: 700;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+        }
+
+        .action-button:hover {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        /* 狀態文字與載入膠囊 */
+        #status {
+            margin: 1.5rem auto 1rem auto;
+            font-size: 0.95rem;
+            font-weight: 600;
+            min-height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 18px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #475569;
+            transition: all 0.3s ease;
+            max-width: 90%;
+        }
+
+        #loading {
+            display: none;
+            color: #3b82f6;
+            font-size: 0.925rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        /* 地圖主畫布容器 */
+        .map-stage {
+            width: 100%;
+            border-radius: 20px;
+            background: radial-gradient(circle at 50% 50%, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            position: relative;
+            margin: 1rem 0 2rem 0;
+            box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.02);
+        }
+
+        #map {
+            width: 100%;
+            max-height: 680px;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.05));
+        }
+
+        /* 都道府縣精緻幾何輪廓與懸浮效果 */
+        .county {
+            stroke: #cbd5e1;
+            stroke-width: 8;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            fill: #e2e8f0;
+            transition: fill 0.35s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.25s ease, filter 0.25s ease, opacity 0.2s ease;
+            cursor: pointer;
+        }
+
+        .county:hover {
+            stroke-width: 18;
+            stroke: #0f172a;
+            opacity: 0.96;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+        }
+
+        /* 質感圖例區塊 (Legend) */
+        .legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 1.5rem 0 0.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #334155;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+
+        /* 輔助響應式調整 */
+        @media (max-width: 640px) {
+            body { padding: 1rem 0.5rem; }
+            .card-container { padding: 2rem 1.25rem; border-radius: 20px; }
+            h1 { font-size: 1.65rem; }
+            .subtitle { font-size: 0.95rem; }
+            .search-control-wrap { flex-direction: column; width: 100%; border-radius: 14px; }
+            #nickname { width: 100%; text-align: center; }
+            .action-button { width: 100%; }
+            .legend { gap: 8px; }
+            .legend-item { padding: 6px 12px; font-size: 0.825rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <!-- 標題區域 -->
+        <h1 style="font-size: 3rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.25; margin: 0px 0px 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem; filter: drop-shadow(rgba(255, 94, 58, 0.25) 0px 4px 12px);" class=""><span style="font-size: 3.25rem; -webkit-text-fill-color: initial; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));" class="">🗾</span><span style="background: linear-gradient(135deg, #FF007A 0%, #FF5E3A 22%, #FF9A00 45%, #00B4D8 75%, #7928CA 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" class="">日本好好玩~你去過哪裡?</span></h1>
+        <div class="subtitle">跟朋友展示，你在日本 47 都道府縣的足跡！</div>
+        
+        <!-- 輸入與查詢區域 -->
+        <div class="search-control-wrap">
+            <input type="text" id="nickname" placeholder="輸入暱稱（如：Hermann）" spellcheck="false" autocomplete="off">
+            <button class="action-button" onclick="loadUserData()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span class="">查詢我的地圖</span>
+            </button>
+        </div>
+
+        <div>
+            <div id="status" class="inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold">❌ 無法載入 japan_counties.json，請確認檔案存在</div>
+        </div>
+        <div id="loading" style="display: none;" class="">
+            <span class="inline-block animate-spin mr-1">🔄</span> 載入日本地圖中...
+        </div>
+        
+        <!-- 日本地圖展示區塊 -->
+        <div class="map-stage" style="position: relative; min-height: 580px;"><div id="map-tooltip" style="position: absolute; display: none; pointer-events: none; background: rgb(15, 23, 42); color: rgb(255, 255, 255); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: rgba(0, 0, 0, 0.25) 0px 4px 12px; z-index: 50; transform: translate(-50%, -125%); white-space: nowrap; left: 197.853px; top: 709.193px;" class=""><strong>沖繩縣</strong> (沖繩)<div style="font-size:11px; color:#cbd5e1; margin-top:2px;" class="">造訪狀態：未去過 (0次) · 點擊切換</div></div><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;"><div class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span> 點擊地圖各縣可直接切換造訪次數 (0 → 1 → 2 → 3 → 4+)</div><div id="stats-badge" class="text-xs font-bold px-3 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm">已解鎖：<span id="unlocked-count" class="text-emerald-600 font-extrabold">0</span> / 47</div></div><svg id="map" viewBox="0 0 950 820" style="width:100%; height:auto; max-height:680px; display:block; margin:0 auto; user-select:none;"><defs><filter id="drop-shadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.1"></feDropShadow></filter></defs><g id="county-group" filter="url(#drop-shadow)"><g id="pref-01" style="cursor: pointer; transition: transform 0.15s;"><rect x="690" y="55" width="160" height="105" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="770" y="112.5" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">北海道</text></g><g id="pref-02" style="cursor: pointer; transition: transform 0.15s;"><rect x="670" y="195" width="85" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="712.5" y="221" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">青森縣</text></g><g id="pref-03" style="cursor: pointer; transition: transform 0.15s;"><rect x="715" y="242" width="55" height="58" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="742.5" y="276" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">岩手縣</text></g><g id="pref-04" style="cursor: pointer; transition: transform 0.15s;"><rect x="715" y="304" width="55" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="742.5" y="330" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">宮城縣</text></g><g id="pref-05" style="cursor: pointer; transition: transform 0.15s;"><rect x="655" y="242" width="56" height="52" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="683" y="273" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">秋田縣</text></g><g id="pref-06" style="cursor: pointer; transition: transform 0.15s;"><rect x="655" y="298" width="56" height="48" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="683" y="327" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">山形縣</text></g><g id="pref-07" style="cursor: pointer; transition: transform 0.15s;"><rect x="675" y="350" width="90" height="48" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="720" y="379" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">福島縣</text></g><g id="pref-08" style="cursor: pointer; transition: transform 0.15s;"><rect x="710" y="402" width="55" height="46" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="737.5" y="430" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">茨城縣</text></g><g id="pref-09" style="cursor: pointer; transition: transform 0.15s;"><rect x="655" y="402" width="51" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="680.5" y="428" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">栃木縣</text></g><g id="pref-10" style="cursor: pointer; transition: transform 0.15s;"><rect x="600" y="402" width="51" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="625.5" y="428" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">群馬縣</text></g><g id="pref-11" style="cursor: pointer; transition: transform 0.15s;"><rect x="615" y="448" width="58" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="644" y="471" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">埼玉縣</text></g><g id="pref-12" style="cursor: pointer; transition: transform 0.15s;"><rect x="705" y="452" width="58" height="62" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="734" y="488" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">千葉縣</text></g><g id="pref-13" style="cursor: pointer; transition: transform 0.15s;"><rect x="625" y="488" width="75" height="32" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="662.5" y="509" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">東京都</text></g><g id="pref-14" style="cursor: pointer; transition: transform 0.15s;"><rect x="625" y="524" width="75" height="34" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="662.5" y="546" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">神奈川縣</text></g><g id="pref-15" style="cursor: pointer; transition: transform 0.15s;"><rect x="595" y="320" width="56" height="78" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="623" y="364" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">新潟縣</text></g><g id="pref-16" style="cursor: pointer; transition: transform 0.15s;"><rect x="535" y="350" width="56" height="40" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="563" y="375" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">富山縣</text></g><g id="pref-17" style="cursor: pointer; transition: transform 0.15s;"><rect x="495" y="320" width="36" height="70" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="513" y="360" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">石川縣</text></g><g id="pref-18" style="cursor: pointer; transition: transform 0.15s;"><rect x="475" y="394" width="56" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="503" y="417" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">福井縣</text></g><g id="pref-19" style="cursor: pointer; transition: transform 0.15s;"><rect x="575" y="475" width="46" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="598" y="501" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">山梨縣</text></g><g id="pref-20" style="cursor: pointer; transition: transform 0.15s;"><rect x="545" y="415" width="50" height="75" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="570" y="457.5" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">長野縣</text></g><g id="pref-21" style="cursor: pointer; transition: transform 0.15s;"><rect x="485" y="434" width="56" height="54" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="513" y="466" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">岐阜縣</text></g><g id="pref-22" style="cursor: pointer; transition: transform 0.15s;"><rect x="550" y="522" width="70" height="40" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="585" y="547" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">靜岡縣</text></g><g id="pref-23" style="cursor: pointer; transition: transform 0.15s;"><rect x="485" y="492" width="60" height="46" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="515" y="520" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">愛知縣</text></g><g id="pref-24" style="cursor: pointer; transition: transform 0.15s;"><rect x="465" y="542" width="50" height="54" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="490" y="574" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">三重縣</text></g><g id="pref-25" style="cursor: pointer; transition: transform 0.15s;"><rect x="442" y="450" width="39" height="48" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="461.5" y="479" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">滋賀縣</text></g><g id="pref-26" style="cursor: pointer; transition: transform 0.15s;"><rect x="400" y="430" width="38" height="52" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="419" y="461" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">京都府</text></g><g id="pref-27" style="cursor: pointer; transition: transform 0.15s;"><rect x="395" y="486" width="43" height="44" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="416.5" y="513" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">大阪府</text></g><g id="pref-28" style="cursor: pointer; transition: transform 0.15s;"><rect x="345" y="430" width="51" height="70" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="370.5" y="470" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">兵庫縣</text></g><g id="pref-29" style="cursor: pointer; transition: transform 0.15s;"><rect x="422" y="534" width="39" height="48" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="441.5" y="563" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">奈良縣</text></g><g id="pref-30" style="cursor: pointer; transition: transform 0.15s;"><rect x="395" y="586" width="56" height="52" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="423" y="617" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">和歌山縣</text></g><g id="pref-31" style="cursor: pointer; transition: transform 0.15s;"><rect x="280" y="420" width="61" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="310.5" y="443" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">鳥取縣</text></g><g id="pref-32" style="cursor: pointer; transition: transform 0.15s;"><rect x="215" y="435" width="61" height="38" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="245.5" y="459" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">島根縣</text></g><g id="pref-33" style="cursor: pointer; transition: transform 0.15s;"><rect x="280" y="460" width="61" height="44" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="310.5" y="487" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">岡山縣</text></g><g id="pref-34" style="cursor: pointer; transition: transform 0.15s;"><rect x="215" y="477" width="61" height="44" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="245.5" y="504" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">廣島縣</text></g><g id="pref-35" style="cursor: pointer; transition: transform 0.15s;"><rect x="150" y="470" width="61" height="52" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="180.5" y="501" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">山口縣</text></g><g id="pref-36" style="cursor: pointer; transition: transform 0.15s;"><rect x="325" y="560" width="55" height="40" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="352.5" y="585" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">德島縣</text></g><g id="pref-37" style="cursor: pointer; transition: transform 0.15s;"><rect x="295" y="524" width="62" height="32" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="326" y="545" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">香川縣</text></g><g id="pref-38" style="cursor: pointer; transition: transform 0.15s;"><rect x="230" y="535" width="61" height="45" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="260.5" y="562.5" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">愛媛縣</text></g><g id="pref-39" style="cursor: pointer; transition: transform 0.15s;"><rect x="245" y="584" width="76" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="283" y="610" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">高知縣</text></g><g id="pref-40" style="cursor: pointer; transition: transform 0.15s;"><rect x="110" y="535" width="55" height="42" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="137.5" y="561" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">福岡縣</text></g><g id="pref-41" style="cursor: pointer; transition: transform 0.15s;"><rect x="55" y="550" width="51" height="36" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="80.5" y="573" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">佐賀縣</text></g><g id="pref-42" style="cursor: pointer; transition: transform 0.15s;"><rect x="30" y="590" width="55" height="45" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="57.5" y="617.5" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">長崎縣</text></g><g id="pref-43" style="cursor: pointer; transition: transform 0.15s;"><rect x="89" y="581" width="52" height="50" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="115" y="611" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">熊本縣</text></g><g id="pref-44" style="cursor: pointer; transition: transform 0.15s;"><rect x="145" y="581" width="52" height="45" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="171" y="608.5" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">大分縣</text></g><g id="pref-45" style="cursor: pointer; transition: transform 0.15s;"><rect x="125" y="635" width="54" height="55" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="152" y="667.5" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">宮崎縣</text></g><g id="pref-46" style="cursor: pointer; transition: transform 0.15s;"><rect x="65" y="645" width="56" height="62" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="93" y="681" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b" pointer-events="none">鹿兒島縣</text></g><g id="pref-47" style="cursor: pointer; transition: transform 0.15s;"><rect x="60" y="735" width="90" height="46" rx="8" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2" style="transition: 0.25s;"></rect><text x="105" y="763" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b" pointer-events="none">沖繩縣</text></g></g></svg></div>
+        
+        <!-- 圖例區域：升級調和配色與字體層級 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e2e8f0; border: 1px solid #cbd5e1;"></div>
+                <span class="">0 (未去過)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#10b981;"></div>
+                <span class="">1次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#facc15;"></div>
+                <span class="">2次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#f97316;"></div>
+                <span class="">3次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#ef4444;"></div>
+                <span class="">4次以上</span>
+            </div>
+        </div>
+    <script>(function() { const PREFECTURES = [ { id: '01', name: '北海道', region: '北海道', x: 690, y: 55, w: 160, h: 105, r: 8 }, { id: '02', name: '青森縣', region: '東北', x: 670, y: 195, w: 85, h: 42, r: 6 }, { id: '03', name: '岩手縣', region: '東北', x: 715, y: 242, w: 55, h: 58, r: 6 }, { id: '04', name: '宮城縣', region: '東北', x: 715, y: 304, w: 55, h: 42, r: 6 }, { id: '05', name: '秋田縣', region: '東北', x: 655, y: 242, w: 56, h: 52, r: 6 }, { id: '06', name: '山形縣', region: '東北', x: 655, y: 298, w: 56, h: 48, r: 6 }, { id: '07', name: '福島縣', region: '東北', x: 675, y: 350, w: 90, h: 48, r: 6 }, { id: '08', name: '茨城縣', region: '關東', x: 710, y: 402, w: 55, h: 46, r: 6 }, { id: '09', name: '栃木縣', region: '關東', x: 655, y: 402, w: 51, h: 42, r: 6 }, { id: '10', name: '群馬縣', region: '關東', x: 600, y: 402, w: 51, h: 42, r: 6 }, { id: '11', name: '埼玉縣', region: '關東', x: 615, y: 448, w: 58, h: 36, r: 6 }, { id: '12', name: '千葉縣', region: '關東', x: 705, y: 452, w: 58, h: 62, r: 6 }, { id: '13', name: '東京都', region: '關東', x: 625, y: 488, w: 75, h: 32, r: 6 }, { id: '14', name: '神奈川縣', region: '關東', x: 625, y: 524, w: 75, h: 34, r: 6 }, { id: '15', name: '新潟縣', region: '中部', x: 595, y: 320, w: 56, h: 78, r: 6 }, { id: '16', name: '富山縣', region: '中部', x: 535, y: 350, w: 56, h: 40, r: 6 }, { id: '17', name: '石川縣', region: '中部', x: 495, y: 320, w: 36, h: 70, r: 6 }, { id: '18', name: '福井縣', region: '中部', x: 475, y: 394, w: 56, h: 36, r: 6 }, { id: '19', name: '山梨縣', region: '中部', x: 575, y: 475, w: 46, h: 42, r: 6 }, { id: '20', name: '長野縣', region: '中部', x: 545, y: 415, w: 50, h: 75, r: 6 }, { id: '21', name: '岐阜縣', region: '中部', x: 485, y: 434, w: 56, h: 54, r: 6 }, { id: '22', name: '靜岡縣', region: '中部', x: 550, y: 522, w: 70, h: 40, r: 6 }, { id: '23', name: '愛知縣', region: '中部', x: 485, y: 492, w: 60, h: 46, r: 6 }, { id: '24', name: '三重縣', region: '近畿', x: 465, y: 542, w: 50, h: 54, r: 6 }, { id: '25', name: '滋賀縣', region: '近畿', x: 442, y: 450, w: 39, h: 48, r: 6 }, { id: '26', name: '京都府', region: '近畿', x: 400, y: 430, w: 38, h: 52, r: 6 }, { id: '27', name: '大阪府', region: '近畿', x: 395, y: 486, w: 43, h: 44, r: 6 }, { id: '28', name: '兵庫縣', region: '近畿', x: 345, y: 430, w: 51, h: 70, r: 6 }, { id: '29', name: '奈良縣', region: '近畿', x: 422, y: 534, w: 39, h: 48, r: 6 }, { id: '30', name: '和歌山縣', region: '近畿', x: 395, y: 586, w: 56, h: 52, r: 6 }, { id: '31', name: '鳥取縣', region: '中國', x: 280, y: 420, w: 61, h: 36, r: 6 }, { id: '32', name: '島根縣', region: '中國', x: 215, y: 435, w: 61, h: 38, r: 6 }, { id: '33', name: '岡山縣', region: '中國', x: 280, y: 460, w: 61, h: 44, r: 6 }, { id: '34', name: '廣島縣', region: '中國', x: 215, y: 477, w: 61, h: 44, r: 6 }, { id: '35', name: '山口縣', region: '中國', x: 150, y: 470, w: 61, h: 52, r: 6 }, { id: '36', name: '德島縣', region: '四國', x: 325, y: 560, w: 55, h: 40, r: 6 }, { id: '37', name: '香川縣', region: '四國', x: 295, y: 524, w: 62, h: 32, r: 6 }, { id: '38', name: '愛媛縣', region: '四國', x: 230, y: 535, w: 61, h: 45, r: 6 }, { id: '39', name: '高知縣', region: '四國', x: 245, y: 584, w: 76, h: 42, r: 6 }, { id: '40', name: '福岡縣', region: '九州', x: 110, y: 535, w: 55, h: 42, r: 6 }, { id: '41', name: '佐賀縣', region: '九州', x: 55, y: 550, w: 51, h: 36, r: 6 }, { id: '42', name: '長崎縣', region: '九州', x: 30, y: 590, w: 55, h: 45, r: 6 }, { id: '43', name: '熊本縣', region: '九州', x: 89, y: 581, w: 52, h: 50, r: 6 }, { id: '44', name: '大分縣', region: '九州', x: 145, y: 581, w: 52, h: 45, r: 6 }, { id: '45', name: '宮崎縣', region: '九州', x: 125, y: 635, w: 54, h: 55, r: 6 }, { id: '46', name: '鹿兒島縣', region: '九州', x: 65, y: 645, w: 56, h: 62, r: 6 }, { id: '47', name: '沖繩縣', region: '沖繩', x: 60, y: 735, w: 90, h: 46, r: 8 } ]; const visitLevel = new Array(PREFECTURES.length).fill(0); const colorPalette = ['#e2e8f0', '#10b981', '#facc15', '#f97316', '#ef4444']; const strokePalette = ['#cbd5e1', '#059669', '#d97706', '#ea580c', '#dc2626']; const tooltip = document.getElementById('map-tooltip'); function renderPrefectures() { const group = document.getElementById('county-group'); group.innerHTML = ''; PREFECTURES.forEach((p, idx) => { const itemG = document.createElementNS('http://www.w3.org/2000/svg', 'g'); itemG.setAttribute('id', 'pref-' + p.id); itemG.style.cursor = 'pointer'; itemG.style.transition = 'transform 0.15s ease'; const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); rect.setAttribute('x', p.x); rect.setAttribute('y', p.y); rect.setAttribute('width', p.w); rect.setAttribute('height', p.h); rect.setAttribute('rx', p.r); rect.setAttribute('fill', colorPalette[visitLevel[idx]]); rect.setAttribute('stroke', strokePalette[visitLevel[idx]]); rect.setAttribute('stroke-width', '2'); rect.style.transition = 'all 0.25s ease'; const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); text.setAttribute('x', p.x + p.w / 2); text.setAttribute('y', p.y + p.h / 2 + 5); text.setAttribute('text-anchor', 'middle'); text.setAttribute('font-size', p.w > 70 ? '14' : '12'); text.setAttribute('font-weight', '700'); text.setAttribute('fill', visitLevel[idx] >= 3 ? '#ffffff' : '#1e293b'); text.setAttribute('pointer-events', 'none'); text.textContent = p.name; itemG.appendChild(rect); itemG.appendChild(text); itemG.addEventListener('mouseenter', (e) => { rect.setAttribute('stroke-width', '3.5'); rect.setAttribute('stroke', '#0f172a'); itemG.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'; const visitTxt = visitLevel[idx] === 0 ? '未去過 (0次)' : (visitLevel[idx] >= 4 ? '4次以上' : `${visitLevel[idx]}次`); tooltip.innerHTML = `<strong>${p.name}</strong> (${p.region})<div style='font-size:11px; color:#cbd5e1; margin-top:2px;'>造訪狀態：${visitTxt} · 點擊切換</div>`; tooltip.style.display = 'block'; }); itemG.addEventListener('mousemove', (e) => { const stageRect = document.querySelector('.map-stage').getBoundingClientRect(); tooltip.style.left = (e.clientX - stageRect.left) + 'px'; tooltip.style.top = (e.clientY - stageRect.top) + 'px'; }); itemG.addEventListener('mouseleave', () => { rect.setAttribute('stroke-width', '2'); rect.setAttribute('stroke', strokePalette[visitLevel[idx]]); itemG.style.filter = ''; tooltip.style.display = 'none'; }); itemG.addEventListener('click', () => { visitLevel[idx] = (visitLevel[idx] + 1) % 5; rect.setAttribute('fill', colorPalette[visitLevel[idx]]); rect.setAttribute('stroke', strokePalette[visitLevel[idx]]); text.setAttribute('fill', visitLevel[idx] >= 3 ? '#ffffff' : '#1e293b'); const visitTxt = visitLevel[idx] === 0 ? '未去過 (0次)' : (visitLevel[idx] >= 4 ? '4次以上' : `${visitLevel[idx]}次`); tooltip.innerHTML = `<strong>${p.name}</strong> (${p.region})<div style='font-size:11px; color:#cbd5e1; margin-top:2px;'>造訪狀態：${visitTxt} · 點擊切換</div>`; updateStats(); }); group.appendChild(itemG); }); updateStats(); } function updateStats() { const unlocked = visitLevel.filter(v => v > 0).length; const countEl = document.getElementById('unlocked-count'); if (countEl) countEl.textContent = unlocked; } window.loadUserData = function() { const nickInput = document.getElementById('nickname'); const name = nickInput ? nickInput.value.trim() : ''; const statusEl = document.getElementById('status'); if (!name) { statusEl.innerHTML = '⚠️ 請輸入暱稱（例如：Hermann）'; statusEl.className = 'inline-flex items-center text-amber-700 bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full text-sm font-semibold'; return; } const mockData = { 'Hermann': [4, 2, 1, 3, 0, 1, 2, 3, 2, 1, 2, 3, 4, 3, 1, 2, 3, 1, 2, 3, 2, 3, 4, 2, 2, 4, 4, 3, 2, 1, 1, 0, 2, 3, 2, 1, 2, 2, 1, 4, 2, 2, 3, 2, 1, 2, 4] }; const defaultSeq = [3, 1, 0, 2, 0, 1, 1, 2, 1, 0, 3, 2, 4, 3, 1, 1, 2, 0, 2, 1, 1, 2, 3, 1, 2, 4, 4, 2, 1, 0, 0, 0, 1, 2, 1, 0, 1, 1, 0, 3, 1, 1, 2, 1, 0, 1, 3]; const seq = mockData[name] || defaultSeq; seq.forEach((val, i) => { if (i < visitLevel.length) visitLevel[i] = val % 5; }); renderPrefectures(); const visited = visitLevel.filter(v => v > 0).length; statusEl.innerHTML = `🎉 <strong>${name}</strong> 的專屬地圖已載入！已走訪 <strong>${visited}</strong> / 47 個都道府縣`; statusEl.className = 'inline-flex items-center text-indigo-700 bg-indigo-50 border border-indigo-200 px-5 py-1.5 rounded-full text-sm font-semibold shadow-sm'; }; renderPrefectures(); })();</script></div>
+
+    <script>
+        // 維持原邏輯配色配置：精緻化現代色調（Slate灰、翡翠綠、明亮金黃、活力橘、深烈紅）
+        const colors = ['#e2e8f0', '#10b981', '#facc15', '#f97316', '#ef4444'];
+        let countiesData = [];
+        let countyElements = {};
+        
+        // 🔥 啟動時載入日本地圖JSON（維持調用結構完全不變）
+        async function initMap() {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const response = await fetch('japan_counties.json');
+                const json = await response.json();
+                countiesData = json.counties;
+                
+                // 動態建立地圖path
+                const group = document.getElementById('county-group');
+                countiesData.forEach((county, index) => {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.id = county.id;
+                    path.setAttribute("class", "county");
+                    path.setAttribute('title', county.title);
+                    path.setAttribute('d', county.path);
+                    path.dataset.index = index;
+                    countyElements[county.id] = path;
+                    group.appendChild(path);
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `✅ 不同顏色顯示到過 1, 2, 3 次與 4 次以上各都道府縣！`;
+                statusEl.className = "inline-flex items-center text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = '❌ 無法載入 japan_counties.json，請確認檔案存在';
+                statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                console.error('JSON載入錯誤:', error);
+            }
+        }
+        
+        // 🔍 查詢用戶資料（維持所有邏輯與檔案調用完全不變）
+        async function loadUserData() {
+            const nickname = document.getElementById('nickname').value.trim();
+            const statusEl = document.getElementById('status');
+            if (!nickname) {
+                statusEl.innerHTML = '⚠️ 請輸入暱稱';
+                statusEl.className = "inline-flex items-center text-amber-700 bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                return;
+            }
+            
+            statusEl.innerHTML = '🔄 載入用戶資料...';
+            statusEl.className = "inline-flex items-center text-blue-700 bg-blue-50 border border-blue-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+            
+            try {
+                const response = await fetch('japandata.json');
+                if (!response.ok) {
+                    throw new Error("japandata.json 載入失敗");
+                }
+                const data = await response.json();
+                const foundSequence = data.users[nickname];
+                
+                if (foundSequence && foundSequence.length === countiesData.length) {
+                    const visitedCount = foundSequence.split('').filter(n => n !== '0').length;
+                    statusEl.innerHTML = `🎉 <strong>${nickname}</strong> 已解鎖 <strong>${visitedCount}</strong> / ${countiesData.length} 個都道府縣`;
+                    statusEl.className = "inline-flex items-center text-indigo-700 bg-indigo-50 border border-indigo-200 px-5 py-1.5 rounded-full text-sm font-semibold shadow-sm";
+                    updateMap(foundSequence);
+                } else {
+                    statusEl.innerHTML = `❌ 未找到 "${nickname}" 的資料，請確認 japandata.json 有此暱稱`;
+                    statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ 載入失敗，請確認 japandata.json 存在';
+                statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                console.error('錯誤:', error);
+            }
+        }
+        
+        // 更新地圖顏色與縣市文字渲染（精細化文字陰影與排版）
+        function updateMap(seq) {
+            const existingTexts = document.querySelectorAll('#map text');
+            existingTexts.forEach(t => t.remove());
+            countiesData.forEach((county, i) => {
+                const path = countyElements[county.id];
+                if (path) {
+                    const visits = parseInt(seq[i]) || 0;
+                    path.style.fill = colors[visits] || '#e2e8f0';
+                    path.title = `${county.title}: ${visits}次`;
+                    if (visits > 0 && county.center) {
+                        const [cx, cy] = county.center;
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cx);
+                        text.setAttribute('y', cy);
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
+                        text.setAttribute('font-size', '165');
+                        text.setAttribute('font-weight', '700');
+                        text.setAttribute('font-family', 'var(--font-main)');
+                        text.setAttribute('fill', visits >= 3 ? '#ffffff' : '#0f172a');
+                        text.setAttribute('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))');
+                        text.setAttribute('pointer-events', 'none');
+                        text.textContent = county.title;
+                        document.getElementById('map').appendChild(text);
+                    }
+                }
+            });
+        }
+        
+        // Enter鍵觸發查詢
+        document.getElementById('nickname').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadUserData();
+        });
+        
+        // 頁面載入完成
+        window.onload = () => {
+            initMap();
+        };
+    </script>
+</body></html>
