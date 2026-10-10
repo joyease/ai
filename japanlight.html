@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我去過日本哪裡？47都道府縣旅遊地圖</title>
+    <!-- Google Fonts for Modern Japanese/Traditional Chinese Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --font-main: 'Plus Jakarta Sans', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 50%, #f1f5f9 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 2.5rem 1rem;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 柔和質感的玻璃與陰影外框 */
+        .card-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.08), 0 8px 16px -6px rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 裝飾性漸層頂部線條 */
+        .card-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+        }
+
+        /* 標題與副標 */
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #0f172a;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 1.05rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            letter-spacing: -0.01em;
+        }
+
+        /* 輸入控制列整合面板 */
+        .search-control-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 6px 8px;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+            transition: all 0.25s ease;
+            max-width: 540px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .search-control-wrap:focus-within {
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+
+        #nickname {
+            flex: 1;
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 12px 16px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            color: #0f172a;
+            outline: none;
+            letter-spacing: 0.5px;
+        }
+
+        #nickname::placeholder {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.975rem;
+            font-weight: 700;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+        }
+
+        .action-button:hover {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.2);
+        }
+
+        .action-button:active {
+            transform: translateY(0);
+        }
+
+        /* 狀態文字與載入膠囊 */
+        #status {
+            margin: 1.5rem auto 1rem auto;
+            font-size: 0.95rem;
+            font-weight: 600;
+            min-height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 18px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            color: #475569;
+            transition: all 0.3s ease;
+            max-width: 90%;
+        }
+
+        #loading {
+            display: none;
+            color: #3b82f6;
+            font-size: 0.925rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        /* 地圖主畫布容器 */
+        .map-stage {
+            width: 100%;
+            border-radius: 20px;
+            background: radial-gradient(circle at 50% 50%, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            position: relative;
+            margin: 1rem 0 2rem 0;
+            box-shadow: inset 0 2px 6px rgba(15, 23, 42, 0.02);
+        }
+
+        #map {
+            width: 100%;
+            max-height: 680px;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 4px 12px rgba(15, 23, 42, 0.05));
+        }
+
+        /* 都道府縣精緻幾何輪廓與懸浮效果 */
+        .county {
+            stroke: #cbd5e1;
+            stroke-width: 8;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+            fill: #e2e8f0;
+            transition: fill 0.35s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.25s ease, filter 0.25s ease, opacity 0.2s ease;
+            cursor: pointer;
+        }
+
+        .county:hover {
+            stroke-width: 18;
+            stroke: #0f172a;
+            opacity: 0.96;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+        }
+
+        /* 質感圖例區塊 (Legend) */
+        .legend {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin: 1.5rem 0 0.5rem 0;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(15, 23, 42, 0.03);
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #334155;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+
+        /* 輔助響應式調整 */
+        @media (max-width: 640px) {
+            body { padding: 1rem 0.5rem; }
+            .card-container { padding: 2rem 1.25rem; border-radius: 20px; }
+            h1 { font-size: 1.65rem; }
+            .subtitle { font-size: 0.95rem; }
+            .search-control-wrap { flex-direction: column; width: 100%; border-radius: 14px; }
+            #nickname { width: 100%; text-align: center; }
+            .action-button { width: 100%; }
+            .legend { gap: 8px; }
+            .legend-item { padding: 6px 12px; font-size: 0.825rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <!-- 標題區域 -->
+        <h1>
+            <span>🗾</span> 日本好好玩~你去過哪裡?
+        </h1>
+        <div class="subtitle">跟朋友展示，你在日本 47 都道府縣的足跡！</div>
+        
+        <!-- 輸入與查詢區域 -->
+        <div class="search-control-wrap">
+            <input type="text" id="nickname" placeholder="輸入暱稱（如：Hermann）" spellcheck="false" autocomplete="off">
+            <button class="action-button" onclick="loadUserData()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>查詢我的地圖</span>
+            </button>
+        </div>
+
+        <div>
+            <div id="status">不同顏色顯示到過 1, 2, 3 次與 4 次以上！</div>
+        </div>
+        <div id="loading">
+            <span class="inline-block animate-spin mr-1">🔄</span> 載入日本地圖中...
+        </div>
+        
+        <!-- 日本地圖展示區塊 -->
+        <div class="map-stage">
+            <svg id="map" viewBox="0 0 11300 11300" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <!-- 陰影與濾鏡定義 -->
+                    <filter id="county-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                        <feDropShadow dx="0" dy="8" stdDeviation="12" flood-opacity="0.08"/>
+                    </filter>
+                </defs>
+                <!-- JSON會動態插入這裡 -->
+                <g id="county-group"></g>
+            </svg>
+        </div>
+        
+        <!-- 圖例區域：升級調和配色與字體層級 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background:#e2e8f0; border: 1px solid #cbd5e1;"></div>
+                <span>0 (未去過)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#10b981;"></div>
+                <span>1次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#facc15;"></div>
+                <span>2次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#f97316;"></div>
+                <span>3次</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background:#ef4444;"></div>
+                <span>4次以上</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 維持原邏輯配色配置：精緻化現代色調（Slate灰、翡翠綠、明亮金黃、活力橘、深烈紅）
+        const colors = ['#e2e8f0', '#10b981', '#facc15', '#f97316', '#ef4444'];
+        let countiesData = [];
+        let countyElements = {};
+        
+        // 🔥 啟動時載入日本地圖JSON（維持調用結構完全不變）
+        async function initMap() {
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const response = await fetch('japan_counties.json');
+                const json = await response.json();
+                countiesData = json.counties;
+                
+                // 動態建立地圖path
+                const group = document.getElementById('county-group');
+                countiesData.forEach((county, index) => {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.id = county.id;
+                    path.setAttribute("class", "county");
+                    path.setAttribute('title', county.title);
+                    path.setAttribute('d', county.path);
+                    path.dataset.index = index;
+                    countyElements[county.id] = path;
+                    group.appendChild(path);
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = `✅ 不同顏色顯示到過 1, 2, 3 次與 4 次以上各都道府縣！`;
+                statusEl.className = "inline-flex items-center text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                const statusEl = document.getElementById('status');
+                statusEl.innerHTML = '❌ 無法載入 japan_counties.json，請確認檔案存在';
+                statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                console.error('JSON載入錯誤:', error);
+            }
+        }
+        
+        // 🔍 查詢用戶資料（維持所有邏輯與檔案調用完全不變）
+        async function loadUserData() {
+            const nickname = document.getElementById('nickname').value.trim();
+            const statusEl = document.getElementById('status');
+            if (!nickname) {
+                statusEl.innerHTML = '⚠️ 請輸入暱稱';
+                statusEl.className = "inline-flex items-center text-amber-700 bg-amber-50 border border-amber-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                return;
+            }
+            
+            statusEl.innerHTML = '🔄 載入用戶資料...';
+            statusEl.className = "inline-flex items-center text-blue-700 bg-blue-50 border border-blue-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+            
+            try {
+                const response = await fetch('japandata.json');
+                if (!response.ok) {
+                    throw new Error("japandata.json 載入失敗");
+                }
+                const data = await response.json();
+                const foundSequence = data.users[nickname];
+                
+                if (foundSequence && foundSequence.length === countiesData.length) {
+                    const visitedCount = foundSequence.split('').filter(n => n !== '0').length;
+                    statusEl.innerHTML = `🎉 <strong>${nickname}</strong> 已解鎖 <strong>${visitedCount}</strong> / ${countiesData.length} 個都道府縣`;
+                    statusEl.className = "inline-flex items-center text-indigo-700 bg-indigo-50 border border-indigo-200 px-5 py-1.5 rounded-full text-sm font-semibold shadow-sm";
+                    updateMap(foundSequence);
+                } else {
+                    statusEl.innerHTML = `❌ 未找到 "${nickname}" 的資料，請確認 japandata.json 有此暱稱`;
+                    statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                }
+            } catch (error) {
+                statusEl.innerHTML = '❌ 載入失敗，請確認 japandata.json 存在';
+                statusEl.className = "inline-flex items-center text-rose-700 bg-rose-50 border border-rose-200 px-4 py-1.5 rounded-full text-sm font-semibold";
+                console.error('錯誤:', error);
+            }
+        }
+        
+        // 更新地圖顏色與縣市文字渲染（精細化文字陰影與排版）
+        function updateMap(seq) {
+            const existingTexts = document.querySelectorAll('#map text');
+            existingTexts.forEach(t => t.remove());
+            countiesData.forEach((county, i) => {
+                const path = countyElements[county.id];
+                if (path) {
+                    const visits = parseInt(seq[i]) || 0;
+                    path.style.fill = colors[visits] || '#e2e8f0';
+                    path.title = `${county.title}: ${visits}次`;
+                    if (visits > 0 && county.center) {
+                        const [cx, cy] = county.center;
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', cx);
+                        text.setAttribute('y', cy);
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
+                        text.setAttribute('font-size', '165');
+                        text.setAttribute('font-weight', '700');
+                        text.setAttribute('font-family', 'var(--font-main)');
+                        text.setAttribute('fill', visits >= 3 ? '#ffffff' : '#0f172a');
+                        text.setAttribute('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))');
+                        text.setAttribute('pointer-events', 'none');
+                        text.textContent = county.title;
+                        document.getElementById('map').appendChild(text);
+                    }
+                }
+            });
+        }
+        
+        // Enter鍵觸發查詢
+        document.getElementById('nickname').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadUserData();
+        });
+        
+        // 頁面載入完成
+        window.onload = () => {
+            initMap();
+        };
+    </script>
+</body>
+</html>
